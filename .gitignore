@@ -1,0 +1,46 @@
+# data & model artifacts
+data/raw/
+data/processed/
+models/
+.dvc/tmp/
+.dvc/cache/
+
+# mlflow
+mlruns/
+mlartifacts/
+
+# environment
+.env
+*.env
+venv/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# jupyter
+.ipynb_checkpoints/
+*.ipynb~
+
+# os
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# logs
+*.log
+logs/
+
+# misc
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.coverage
