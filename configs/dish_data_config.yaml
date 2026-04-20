@@ -1,0 +1,22 @@
+data:
+  metadata_paths:
+    - data/raw/metadata/dish_metadata_cafe1.csv
+    - data/raw/metadata/dish_metadata_cafe2.csv
+  imagery_dir: data/raw/imagery/realsense_overhead/
+  train_split: data/raw/dish_ids/splits/train.txt
+  test_split: data/raw/dish_ids/splits/test.txt
+  target_size: [224, 224]
+  num_workers: 4
+
+dish_cols:
+  - dish_id
+  - total_calories
+  #- total_mass
+  #- total_fat
+  - total_protein
+  #- num_ingrs
+
+training:
+  batch_size: 32
+  epochs: 20
+  seed: 42

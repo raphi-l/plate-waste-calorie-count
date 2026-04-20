@@ -1,0 +1,33 @@
+configs:
+  linear_baseline:
+    model: linear
+    lr: 0.001
+    optimizer: adam
+
+  mlp_regressor:
+    model: mlp
+    lr: 0.001
+    optimizer: adam
+    hidden_dims: [512, 256, 128]
+    dropout: 0.3
+
+  efficientnet_b0:
+    model: efficientnet_b0
+    weights: EfficientNet_B0_Weights.DEFAULT
+    lr: 0.0001
+    optimizer: adam
+    freeze_backbone: true
+    unfreeze_epoch: 5      # unfreeze after 5 epochs for fine-tuning
+    dropout: 0.4
+  
+  efficientnet_b1:
+    model: efficientnet_b1
+    weights: EfficientNet_B1_Weights.DEFAULT
+    lr: 0.0001
+    optimizer: adam
+    freeze_backbone: true
+    unfreeze_epoch: 5      # unfreeze after 5 epochs for fine-tuning
+    dropout: 0.4
+  
+  resnet:
+    model: resnet100
