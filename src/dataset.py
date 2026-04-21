@@ -1,5 +1,3 @@
-from typing import Never
-
 import pandas as pd
 import numpy as  np
 from pathlib import Path
@@ -20,8 +18,8 @@ class Nutrition5KDataset(Dataset):
                  transform=None,
                  target_size: tuple = (224,224),
                  ):
-        self.imagery_dir = Path(self.imagery_dir),
-        self.transform = transform,
+        self.imagery_dir = Path(imagery_dir)
+        self.transform = transform
         self.target_size = target_size
 
         with open(split_file) as f:
@@ -44,7 +42,8 @@ class Nutrition5KDataset(Dataset):
     def _load_metadata(self, path: str) -> pd.DataFrame:
         df = pd.read_csv(path, header=0)
 
-        with open('configs/dish_data_config.yaml','r') as f:
+        _cfg_path = Path(__file__).parent.parent / 'configs' / 'dish_data_config.yaml'
+        with open(_cfg_path, 'r') as f:
             config = yaml.safe_load(f)
 
         dish_cols = config['dish_cols']
@@ -70,7 +69,7 @@ class Nutrition5KDataset(Dataset):
         """return np.array image RGB with normalized pixle valuess"""
         path = self.imagery_dir / dish_id / 'rgb.png'
         img = Image.open(path).convert("RGB")
-        img = img.resize(self.target_size, Image.BILINEAR)
+        img = img.resize(self.target_size, Image.Resampling.BILINEAR)
         return np.array(img, dtype=np.float32) / 255.0
     
     def __len__(self):
@@ -86,13 +85,18 @@ class Nutrition5KDataset(Dataset):
         if self.transform:
             image = self.transform(image)
 
-        kcal_target = torch.tensor(row['total_calories'])
-        pro_target = torch.tensor(row['total_protein'])
+        # kcal_target = torch.tensor(row['total_calories'])
+        # pro_target = torch.tensor(row['total_protein'])
+
+        target = torch.tensor(
+            [row["total_calories"], row["total_protein"]],
+            dtype=torch.float32
+        )
 
         return {
             'image': image,
-            'kcal_target': kcal_target,
-            'pro_target': pro_target
+            'target': target,  # shape (2, )
+            'dish_id': dish_id
         }
     
 

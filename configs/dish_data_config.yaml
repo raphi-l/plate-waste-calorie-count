@@ -16,7 +16,12 @@ dish_cols:
   - total_protein
   #- num_ingrs
 
+targets:
+  - total_calories
+  - total_protein
+
 training:
   batch_size: 32
   epochs: 20
   seed: 42
+  loss_weights: [1.0, 3.0] # up-weight protein
