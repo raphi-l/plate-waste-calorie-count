@@ -40,13 +40,23 @@ class Nutrition5kDataset(Dataset):
         self.metadata = metadata
     
     def _load_metadata(self, path: str) -> pd.DataFrame:
-        df = pd.read_csv(path, header=0)
+        df = pd.read_csv(path, header=None, engine='python', on_bad_lines='skip')
+        
+        # original csv missing column titles
+        df = df.rename(columns={0: "dish_id",
+                                1: "total_calories",
+                                2: "total_mass",
+                                3: "total_fat",
+                                4: "total_carb",
+                                5: "total_protein",
+                                6: "num_ingrs",})
+        
+        # _cfg_path = Path(__file__).parent.parent / 'configs' / 'dish_data_config.yaml'
+        # with open(_cfg_path, 'r') as f:
+        #     config = yaml.safe_load(f)
 
-        _cfg_path = Path(__file__).parent.parent / 'configs' / 'dish_data_config.yaml'
-        with open(_cfg_path, 'r') as f:
-            config = yaml.safe_load(f)
-
-        dish_cols = config['dish_cols']
+        dish_cols = ["dish_id", "total_calories", "total_mass",
+        "total_fat", "total_carb", "total_protein", "num_ingrs"]
 
         df.columns = df.columns.str.strip()
         df = df[dish_cols].copy()

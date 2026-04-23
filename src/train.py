@@ -3,6 +3,7 @@ import argparse
 import random
 import numpy as np
 from pathlib import Path
+import os
 
 import torch
 import torch.nn as nn
@@ -12,20 +13,20 @@ import mlflow
 import mlflow.pytorch
 
 from src.dataset import Nutrition5kDataset
-from src.model import build_model
+from src.build_model import build_model
 from src.evaluate import compute_metrics
 
 # --------------------------------------------------------
 # Configure
 # --------------------------------------------------------
 
-CONFIG_PATH = Path("configs/dish_data_config.yaml")
+DATA_CONFIG_PATH = Path("configs/dish_data_config.yaml")
 MODEL_CONFIG_PATH = Path("configs/model_config.yaml")
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 def load_configs():
-    with open(CONFIG_PATH) as f:
+    with open(DATA_CONFIG_PATH) as f:
         data_cfg = yaml.safe_load(f)
     with open(MODEL_CONFIG_PATH) as f:
         model_cfg = yaml.safe_load(f)
@@ -39,7 +40,7 @@ CHECKPOINT = "/content/drive/MyDrive/plate-intake/models/efficientnet_best.pt"
 # resume from checkpoint if it exists
 if os.path.exists(CHECKPOINT):
     ckpt = torch.load(CHECKPOINT)
-    model.load_state_dict(ckpt["model_state"])
+    build_model.load_state_dict(ckpt["model_state"])
     start_epoch = ckpt["epoch"] + 1
     print(f"Resuming from epoch {start_epoch}")
 else:
@@ -73,14 +74,12 @@ def get_dataloaders(data_cfg: dict, model_cfg: dict):
         metadata_paths=data_cfg["metadata_paths"],
         imagery_dir=data_cfg["imagery_dir"],
         split_file=data_cfg["train_split"],
-        target_cols=target_cols,
         transform=train_transform,
     )
     test_ds = Nutrition5kDataset(
         metadata_paths=data_cfg["metadata_paths"],
         imagery_dir=data_cfg["imagery_dir"],
         split_file=data_cfg["test_split"],
-        target_cols=target_cols,
         transform=None,
     )
 

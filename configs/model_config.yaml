@@ -28,4 +28,9 @@ configs:
     model: resnet100
 
   transforms:
-    
+
+training:
+  batch_size: 32
+  epochs: 20
+  seed: 42
+  loss_weights: [1.0, 3.0] # up-weight protein

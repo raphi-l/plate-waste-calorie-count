@@ -1,20 +1,19 @@
-data:
-  metadata_paths:
-    # - data/raw/metadata/dish_metadata_cafe1.csv
-    # - data/raw/metadata/dish_metadata_cafe2.csv
-    - /content/drive/MyDrive/plate-intake/raw/metadata/dish_metadata_cafe1.csv
-    - /content/drive/MyDrive/plate-intake/raw/metadata/dish_metadata_cafe2.csv
-    
-  # imagery_dir: data/raw/imagery/realsense_overhead/
-  imagery_dir: /content/drive/MyDrive/plate-intake/raw/imagery/realsense_overhead/
-
-  # train_split: data/raw/dish_ids/splits/train.txt
-  # test_split: data/raw/dish_ids/splits/test.txt
-  train_split: /content/drive/MyDrive/plate-intake/raw/dish_ids/splits/train.txt
-  test_split:  /content/drive/MyDrive/plate-intake/raw/dish_ids/splits/test.txt
+metadata_paths:
+  # - data/raw/metadata/dish_metadata_cafe1.csv
+  # - data/raw/metadata/dish_metadata_cafe2.csv
+  - /content/drive/MyDrive/plate-intake/raw/metadata/dish_metadata_cafe1.csv
+  - /content/drive/MyDrive/plate-intake/raw/metadata/dish_metadata_cafe2.csv
   
-  target_size: [224, 224]
-  num_workers: 4
+# imagery_dir: data/raw/imagery/realsense_overhead/
+imagery_dir: /content/drive/MyDrive/plate-intake/raw/imagery/realsense_overhead/
+
+# train_split: data/raw/dish_ids/splits/rgb_train_ids.txt
+# test_split: data/raw/dish_ids/splits/rgb_test_ids.txt
+train_split: /content/drive/MyDrive/plate-intake/raw/dish_ids/splits/rgb_train_ids.txt
+test_split:  /content/drive/MyDrive/plate-intake/raw/dish_ids/splits/rgb_test_ids.txt
+
+target_size: [224, 224]
+num_workers: 4
 
 dish_cols:
   - dish_id
@@ -28,8 +27,3 @@ targets:
   - total_calories
   - total_protein
 
-training:
-  batch_size: 32
-  epochs: 20
-  seed: 42
-  loss_weights: [1.0, 3.0] # up-weight protein
