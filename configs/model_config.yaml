@@ -1,12 +1,12 @@
 configs:
   linear_baseline:
-    model: linear
+    model: linear_baseline
     lr: 0.001
     optimizer: adam
 
   efficientnet_b0:
     model: efficientnet
-    variant: b0
+    variant: 0
     weights: EfficientNet_B0_Weights.DEFAULT
     lr: 0.0001
     optimizer: adam
@@ -16,7 +16,7 @@ configs:
   
   efficientnet_b1:
     model: efficientnet
-    variant: b1
+    variant: 1
     weights: EfficientNet_B1_Weights.DEFAULT
     lr: 0.0001
     optimizer: adam
