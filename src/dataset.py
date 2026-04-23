@@ -6,7 +6,7 @@ from torch.utils.data import Dataset
 import torch
 import yaml
 
-class Nutrition5KDataset(Dataset):
+class Nutrition5kDataset(Dataset):
     """Creates PyTorch Dataset in (C, H, W) from overhead RGB images
     Regression target: total_calories, total_protein per dish
     """

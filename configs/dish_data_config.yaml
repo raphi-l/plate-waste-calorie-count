@@ -1,10 +1,18 @@
 data:
   metadata_paths:
-    - data/raw/metadata/dish_metadata_cafe1.csv
-    - data/raw/metadata/dish_metadata_cafe2.csv
-  imagery_dir: data/raw/imagery/realsense_overhead/
-  train_split: data/raw/dish_ids/splits/train.txt
-  test_split: data/raw/dish_ids/splits/test.txt
+    # - data/raw/metadata/dish_metadata_cafe1.csv
+    # - data/raw/metadata/dish_metadata_cafe2.csv
+    - /content/drive/MyDrive/plate-intake/raw/metadata/dish_metadata_cafe1.csv
+    - /content/drive/MyDrive/plate-intake/raw/metadata/dish_metadata_cafe2.csv
+    
+  # imagery_dir: data/raw/imagery/realsense_overhead/
+  imagery_dir: /content/drive/MyDrive/plate-intake/raw/imagery/realsense_overhead/
+
+  # train_split: data/raw/dish_ids/splits/train.txt
+  # test_split: data/raw/dish_ids/splits/test.txt
+  train_split: /content/drive/MyDrive/plate-intake/raw/dish_ids/splits/train.txt
+  test_split:  /content/drive/MyDrive/plate-intake/raw/dish_ids/splits/test.txt
+  
   target_size: [224, 224]
   num_workers: 4
 
