@@ -248,11 +248,11 @@ def run_experiment(
     )
  
     loss_weights = training_cfg.get("loss_weights", None)
-    huber_delta  = training_cfg.get("huber_delta", 50.0)   # read from config, default 50
+    huber_delta  = training_cfg.get("huber_delta", 50.0)
  
     with mlflow.start_run(run_name=config_name):
  
-        # log params
+        # ── log params ────────────────────────────────────────────
         mlflow.log_param("config_name",  config_name)
         mlflow.log_param("model_type",   exp_cfg["model"])
         mlflow.log_param("targets",      str(target_cols))
@@ -269,10 +269,25 @@ def run_experiment(
             if k not in ("model", "lr"):
                 mlflow.log_param(k, v)
  
-        best_val_loss = float("inf")
+        # ── resume from checkpoint if it exists ───────────────────
         Path("models").mkdir(exist_ok=True)
+        ckpt_path     = f"models/{config_name}_best.pt"
+        start_epoch   = 1
+        best_val_loss = float("inf")
  
-        for epoch in range(1, training_cfg["epochs"] + 1):
+        if Path(ckpt_path).exists():
+            print(f"  Resuming from checkpoint: {ckpt_path}")
+            ckpt = torch.load(ckpt_path, map_location=device)
+            model.load_state_dict(ckpt["model_state"])
+            optimizer.load_state_dict(ckpt["optimizer_state"])
+            start_epoch   = ckpt["epoch"] + 1
+            best_val_loss = ckpt["val_loss"]
+            print(f"  Starting at epoch {start_epoch} | best val loss so far: {best_val_loss:.3f}")
+        else:
+            print(f"  No checkpoint found — starting from scratch")
+ 
+        # ── epoch loop ────────────────────────────────────────────
+        for epoch in range(start_epoch, training_cfg["epochs"] + 1):
  
             train_loss, train_loss_per_target = train_one_epoch(
                 model, train_loader, optimizer, device, loss_weights, huber_delta
@@ -304,19 +319,27 @@ def run_experiment(
                 f"protein MAE={prot_mae:.1f}g ({prot_mape:.1f}%)"
             )
  
+            # save checkpoint if best val loss so far
             if val_loss < best_val_loss:
                 best_val_loss = val_loss
-                ckpt_path = f"models/{config_name}_best.pt"
                 torch.save({
-                    "epoch":        epoch,
-                    "model_state":  model.state_dict(),
-                    "val_loss":     val_loss,
-                    "metrics":      metrics,
-                    "target_cols":  target_cols,
-                    "config":       exp_cfg,
-                    "huber_delta":  huber_delta,
+                    "epoch":           epoch,
+                    "model_state":     model.state_dict(),
+                    "optimizer_state": optimizer.state_dict(),
+                    "val_loss":        val_loss,
+                    "metrics":         metrics,
+                    "target_cols":     target_cols,
+                    "config":          exp_cfg,
+                    "huber_delta":     huber_delta,
                 }, ckpt_path)
  
+                # mirror to Drive immediately so checkpoint persists if session ends
+                drive_models = Path("/content/drive/MyDrive/plate-intake/models/")
+                if drive_models.exists():
+                    import shutil
+                    shutil.copy(ckpt_path, drive_models / f"{config_name}_best.pt")
+ 
+        # ── log final artifacts ───────────────────────────────────
         mlflow.log_metric("best_val_loss", best_val_loss)
         mlflow.log_artifact(ckpt_path)
         mlflow.pytorch.log_model(model, artifact_path=config_name)
@@ -325,6 +348,7 @@ def run_experiment(
         print(f"  Checkpoint    : {ckpt_path}")
  
     return best_val_loss
+ 
  
 # ---------------------------------------------------------------
 # Summarize all runs
