@@ -8,7 +8,7 @@ configs:
     model: efficientnet
     variant: 0
     weights: EfficientNet_B0_Weights.DEFAULT
-    lr: 0.000005
+    lr: 0.001
     optimizer: adam
     layers_to_unfreeze: 0
     unfreeze_epoch: 5      # unfreeze after 5 epochs for fine-tuning
@@ -18,7 +18,7 @@ configs:
     model: efficientnet
     variant: 1
     weights: EfficientNet_B1_Weights.DEFAULT
-    lr: 0.000005
+    lr: 0.001
     optimizer: adam
     layers_to_unfreeze: 0
     unfreeze_epoch: 5      # unfreeze after 5 epochs for fine-tuning
@@ -28,7 +28,7 @@ configs:
     model: efficientnet
     variant: 3
     weights: EfficientNet_B1_Weights.DEFAULT
-    lr: 0.0001
+    lr: 0.001
     optimizer: adam
     layers_to_unfreeze: 0
     unfreeze_epoch: 5      # unfreeze after 5 epochs for fine-tuning

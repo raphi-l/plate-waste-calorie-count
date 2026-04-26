@@ -138,6 +138,27 @@ def multi_target_loss(
     return total, loss_per_target
 
 # ---------------------------------------------------------------
+# Unfreezing layers of model on plateau
+# ---------------------------------------------------------------
+
+class UnfreezeOnPlateau:
+    """
+    Unfreezes backbone layers one group at a time when validation
+    loss plataues.
+    Max layers to unfreeze determined by layers_to_unfreeze in 
+    config.
+    """
+
+    def __init__(self,
+                 model: nn.Module,
+                 optimizer: torch.optim.Optimizer,
+                 max_layers: int,
+                 patience: int = 5
+                 lr_backbone = 1e-5
+                 lr_head = 1e-4
+    )
+
+# ---------------------------------------------------------------
 # Train One Epoch
 # ---------------------------------------------------------------
 
