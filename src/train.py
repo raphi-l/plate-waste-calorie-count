@@ -153,10 +153,82 @@ class UnfreezeOnPlateau:
                  model: nn.Module,
                  optimizer: torch.optim.Optimizer,
                  max_layers: int,
-                 patience: int = 5
-                 lr_backbone = 1e-5
-                 lr_head = 1e-4
-    )
+                 patience: int = 5,
+                 lr_backbone: float = 1e-5,
+                 lr_head: float = 1e-4
+    ):
+        self.model = model
+        self.optimizer - optimizer
+        self.max_layers = max_layers
+        self.patience = patience
+        self.lr_backbone = lr_backbone
+        self.lr_head = lr_head
+
+        self.best_loss = float('inf')
+        self.epochs_no_improvement = 0
+        self.layers_unfrozen = 0
+        self.all_unfrozen = max_layers == 0  # 0 if nothing left to unfreeze
+    
+    def step(self, val_loss: float, epoch: int) -> bool:
+        """
+        Called once per epoch with current value loss, determines if 
+        a new layer should be unfrozen
+        """
+
+        if val_loss < self.best_loss:
+            self.best_loss = val_loss
+            self.epochs_no_improvement = 0
+            return False
+        
+        self.epochs_no_improvement += 1
+
+        if self.all_unfrozen:
+            return False
+        
+        if self.epochs_no_improvement >= self.patience:
+            self._unfreeze_next_group(epoch)
+            self.epochs_no_improvement = 0
+            return True
+        
+        return False
+    
+    def _unfreeze_next_group(self, epoch: int):
+        self.layers_unfrozen += 1
+        n = self.layers_unfrozen
+
+        layers = list(self.model.features.children())
+
+        for layer in layers[-n:]:
+            is_batch_norm = isinstance(
+                layer, (nn.BatchNorm1d, nn.BatchNorm2d, nn.BatchNorm3d)
+            )
+
+            if not is_batch_norm:
+                for param in layer.parameters()
+                param.requires_grad = True
+    
+        #reconstruct optimizer - different lr for head and backbone
+
+        self.optimizer = torch.optim.Adam([
+            {'params': self.model.head.parameters(),
+            "lr": self.lr_head},
+            {'params': self.model.head.parameters(),
+            "lr": self.lr_backbone}
+        ])
+
+        print(
+            f"     [INFO] [EPOCH {epoch}] Plateau detected - unfreezing top {n} layers."
+            f"backbone layer(s)  |   backbone lr = {self.backbone}"
+        )
+
+        if self.layers_unfrozen >= self.max_layers:
+            self.all_unfrozen = True
+            print(f"     [INFO] [EPOCH {epoch}] Max Layers ({self.max_layers}) unfrozen!")
+        
+    
+    @property
+    def current_optimizer(self):
+        return self.optimizer
 
 # ---------------------------------------------------------------
 # Train One Epoch
@@ -270,6 +342,19 @@ def run_experiment(
  
     loss_weights = training_cfg.get("loss_weights", None)
     huber_delta  = training_cfg.get("huber_delta", 50.0)
+
+    patience = training_cfg("unfreeze_patience", 5)
+    lr_backbone = training_cfg("lr_backbone",  1e-5)
+    max_layers = training_cfg("layers_to_unfreeze", 0)
+
+    unfreezer = UnfreezeOnPlateau(
+        model = model,
+        optimizer = optimizer,
+        max_layers=max_layers,
+        patience=patience,
+        lr_backbone=lr_backbone,
+        lr_head= exp_cfg["lr"]
+    )
  
     with mlflow.start_run(run_name=config_name):
  
@@ -309,6 +394,8 @@ def run_experiment(
  
         # ── epoch loop ────────────────────────────────────────────
         for epoch in range(start_epoch, training_cfg["epochs"] + 1):
+
+            optimizer = unfreezer.current_optimizer
  
             train_loss, train_loss_per_target = train_one_epoch(
                 model, train_loader, optimizer, device, loss_weights, huber_delta
@@ -316,7 +403,12 @@ def run_experiment(
             val_loss, metrics = evaluate(
                 model, test_loader, device, loss_weights, huber_delta, target_cols
             )
- 
+
+            just_unfroze = unfreezer.step(val_loss, epoch)
+            if just_unfroze:
+                mlflow.log_metric("layers_unfrozen", unfreezer.layers_unfrozen,
+                                  step = epoch)
+
             # log per-epoch metrics
             mlflow.log_metric("train_loss", train_loss, step=epoch)
             mlflow.log_metric("val_loss",   val_loss,   step=epoch)
