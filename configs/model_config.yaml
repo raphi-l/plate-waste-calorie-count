@@ -12,6 +12,15 @@ configs:
     optimizer: adam
     layers_to_unfreeze: 0
     dropout: 0.4
+
+  efficientnet_b0_UF4:
+    model: efficientnet
+    variant: 0
+    weights: EfficientNet_B0_Weights.DEFAULT
+    lr: 0.001
+    optimizer: adam
+    layers_to_unfreeze: 4
+    dropout: 0.4
   
   efficientnet_b1:
     model: efficientnet
@@ -22,23 +31,66 @@ configs:
     layers_to_unfreeze: 0
     dropout: 0.4
 
+  efficientnet_b1_UF4:
+    model: efficientnet
+    variant: 1
+    weights: EfficientNet_B1_Weights.DEFAULT
+    lr: 0.001
+    optimizer: adam
+    layers_to_unfreeze: 4
+    dropout: 0.6
+
   efficientnet_b3:
     model: efficientnet
     variant: 3
-    weights: EfficientNet_B1_Weights.DEFAULT
+    weights: EfficientNet_B3_Weights.DEFAULT
     lr: 0.001
     optimizer: adam
     layers_to_unfreeze: 0
     dropout: 0.4
-  
 
-  transforms:
+  efficientnet_b3_UF4:
+    model: efficientnet
+    variant: 3
+    weights: EfficientNet_B3_Weights.DEFAULT
+    lr: 0.001
+    optimizer: adam
+    layers_to_unfreeze: 4
+    dropout: 0.6
+
+  efficientnet_b3_UF6:
+    model: efficientnet
+    variant: 3
+    weights: EfficientNet_B3_Weights.DEFAULT
+    lr: 0.001
+    optimizer: adam
+    layers_to_unfreeze: 6
+    dropout: 0.6
+
+  efficientnet_b1_UF4_01:
+    model: efficientnet
+    variant: 1
+    weights: EfficientNet_B1_Weights.DEFAULT
+    lr: 0.001
+    optimizer: adam
+    layers_to_unfreeze: 4
+    dropout: 0.6
+
+  efficientnet_b3_UF6_01:
+    model: efficientnet
+    variant: 3
+    weights: EfficientNet_B3_Weights.DEFAULT
+    lr: 0.001
+    optimizer: adam
+    layers_to_unfreeze: 6
+    dropout: 0.6
+
 
 training:
   batch_size: 32
-  epochs: 50
+  epochs: 128
   seed: 42
-  loss_weights: [1.0, 3.0] # up-weight protein
+  loss_weights: [1.0, 4.5] # up-weight protein
   unfreeze_patience: 5
   lr_backbone : 1e-5
 
