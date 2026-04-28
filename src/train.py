@@ -158,7 +158,7 @@ class UnfreezeOnPlateau:
                  lr_head: float = 1e-4
     ):
         self.model = model
-        self.optimizer - optimizer
+        self.optimizer = optimizer
         self.max_layers = max_layers
         self.patience = patience
         self.lr_backbone = lr_backbone
@@ -204,8 +204,8 @@ class UnfreezeOnPlateau:
             )
 
             if not is_batch_norm:
-                for param in layer.parameters()
-                param.requires_grad = True
+                for param in layer.parameters():
+                  param.requires_grad = True
     
         #reconstruct optimizer - different lr for head and backbone
 
@@ -343,9 +343,9 @@ def run_experiment(
     loss_weights = training_cfg.get("loss_weights", None)
     huber_delta  = training_cfg.get("huber_delta", 50.0)
 
-    patience = training_cfg("unfreeze_patience", 5)
-    lr_backbone = training_cfg("lr_backbone",  1e-5)
-    max_layers = training_cfg("layers_to_unfreeze", 0)
+    patience = training_cfg.get("unfreeze_patience", 5)
+    lr_backbone = training_cfg.get("lr_backbone",  1e-5)
+    max_layers = training_cfg.get("layers_to_unfreeze", 0)
 
     unfreezer = UnfreezeOnPlateau(
         model = model,

@@ -40,5 +40,5 @@ training:
   seed: 42
   loss_weights: [1.0, 3.0] # up-weight protein
   unfreeze_patience: 5
-  lr_backbone = 1e-5
+  lr_backbone : 1e-5
 
