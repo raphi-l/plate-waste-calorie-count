@@ -32,18 +32,17 @@ class Nutrition5kDataset(Dataset):
             dfs.append(df)
         metadata = pd.concat(dfs, ignore_index=True)
 
-        metadata = metadata[metadata['dish_id'].isin(valid_ids)].reset_index(drop=True)
-        # self.metadata = metadata
+        # metadata = metadata[metadata['dish_id'].isin(valid_ids)].reset_index(drop=True)
 
-        # print(f"  [INFO] Scanning image directory...")
-        # available_ids = set(
-        #   photo.name for photo in self.imagery_dir.iterdir()
-        #   if (photo / 'rgb.png').exists()
-        # )
-        # print(f"   [INFO] Found {len(available_ids)}")
+        print(f"  [INFO] Scanning image directory...")
+        available_ids = set(
+          photo.name for photo in self.imagery_dir.iterdir()
+          if (photo / 'rgb.png').exists()
+        )
+        print(f"   [INFO] Found {len(available_ids)}")
 
-        # metadata = metadata[metadata['dish_id'].isin(valid_ids)]
-        # metadata = metadata[metadata['dish_id'].isin(available_ids)].reset_index(drop=True)
+        metadata = metadata[metadata['dish_id'].isin(valid_ids)]
+        metadata = metadata[metadata['dish_id'].isin(available_ids)].reset_index(drop=True)
 
         self.metadata = metadata
     
