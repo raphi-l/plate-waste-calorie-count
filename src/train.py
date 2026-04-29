@@ -3,6 +3,7 @@ import argparse
 import random
 import numpy as np
 from pathlib import Path
+import os
 
 import torch
 import torch.nn as nn
@@ -12,20 +13,20 @@ import mlflow
 import mlflow.pytorch
 
 from src.dataset import Nutrition5kDataset
-from src.model import build_model
+from src.build_model import build_model
 from src.evaluate import compute_metrics
 
 # --------------------------------------------------------
 # Configure
 # --------------------------------------------------------
 
-CONFIG_PATH = Path("configs/dish_data_config.yaml")
+DATA_CONFIG_PATH = Path("configs/dish_data_config.yaml")
 MODEL_CONFIG_PATH = Path("configs/model_config.yaml")
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 def load_configs():
-    with open(CONFIG_PATH) as f:
+    with open(DATA_CONFIG_PATH) as f:
         data_cfg = yaml.safe_load(f)
     with open(MODEL_CONFIG_PATH) as f:
         model_cfg = yaml.safe_load(f)
@@ -39,7 +40,7 @@ CHECKPOINT = "/content/drive/MyDrive/plate-intake/models/efficientnet_best.pt"
 # resume from checkpoint if it exists
 if os.path.exists(CHECKPOINT):
     ckpt = torch.load(CHECKPOINT)
-    model.load_state_dict(ckpt["model_state"])
+    build_model.load_state_dict(ckpt["model_state"])
     start_epoch = ckpt["epoch"] + 1
     print(f"Resuming from epoch {start_epoch}")
 else:
@@ -73,14 +74,12 @@ def get_dataloaders(data_cfg: dict, model_cfg: dict):
         metadata_paths=data_cfg["metadata_paths"],
         imagery_dir=data_cfg["imagery_dir"],
         split_file=data_cfg["train_split"],
-        target_cols=target_cols,
         transform=train_transform,
     )
     test_ds = Nutrition5kDataset(
         metadata_paths=data_cfg["metadata_paths"],
         imagery_dir=data_cfg["imagery_dir"],
         split_file=data_cfg["test_split"],
-        target_cols=target_cols,
         transform=None,
     )
 
@@ -137,6 +136,99 @@ def multi_target_loss(
         total = loss_per_target.mean()
 
     return total, loss_per_target
+
+# ---------------------------------------------------------------
+# Unfreezing layers of model on plateau
+# ---------------------------------------------------------------
+
+class UnfreezeOnPlateau:
+    """
+    Unfreezes backbone layers one group at a time when validation
+    loss plataues.
+    Max layers to unfreeze determined by layers_to_unfreeze in 
+    config.
+    """
+
+    def __init__(self,
+                 model: nn.Module,
+                 optimizer: torch.optim.Optimizer,
+                 max_layers: int,
+                 patience: int = 5,
+                 lr_backbone: float = 1e-5,
+                 lr_head: float = 1e-4
+    ):
+        self.model = model
+        self.optimizer = optimizer
+        self.max_layers = max_layers
+        self.patience = patience
+        self.lr_backbone = lr_backbone
+        self.lr_head = lr_head
+
+        self.best_loss = float('inf')
+        self.epochs_no_improvement = 0
+        self.layers_unfrozen = 0
+        self.all_unfrozen = max_layers == 0  # 0 if nothing left to unfreeze
+    
+    def step(self, val_loss: float, epoch: int) -> bool:
+        """
+        Called once per epoch with current value loss, determines if 
+        a new layer should be unfrozen
+        """
+
+        if val_loss < self.best_loss:
+            self.best_loss = val_loss
+            self.epochs_no_improvement = 0
+            return False
+        
+        self.epochs_no_improvement += 1
+
+        if self.all_unfrozen:
+            return False
+        
+        if self.epochs_no_improvement >= self.patience:
+            self._unfreeze_next_group(epoch)
+            self.epochs_no_improvement = 0
+            return True
+        
+        return False
+    
+    def _unfreeze_next_group(self, epoch: int):
+        self.layers_unfrozen += 1
+        n = self.layers_unfrozen
+
+        layers = list(self.model.features.children())
+
+        for layer in layers[-n:]:
+            is_batch_norm = isinstance(
+                layer, (nn.BatchNorm1d, nn.BatchNorm2d, nn.BatchNorm3d)
+            )
+
+            if not is_batch_norm:
+                for param in layer.parameters():
+                  param.requires_grad = True
+    
+        #reconstruct optimizer - different lr for head and backbone
+
+        self.optimizer = torch.optim.Adam([
+            {'params': self.model.head.parameters(),
+            "lr": self.lr_head},
+            {'params': self.model.head.parameters(),
+            "lr": self.lr_backbone}
+        ])
+
+        print(
+            f"     [INFO] [EPOCH {epoch}] Plateau detected - unfreezing top {n} layers."
+            f"backbone layer(s)  |   backbone lr = {self.backbone}"
+        )
+
+        if self.layers_unfrozen >= self.max_layers:
+            self.all_unfrozen = True
+            print(f"     [INFO] [EPOCH {epoch}] Max Layers ({self.max_layers}) unfrozen!")
+        
+    
+    @property
+    def current_optimizer(self):
+        return self.optimizer
 
 # ---------------------------------------------------------------
 # Train One Epoch
@@ -249,11 +341,24 @@ def run_experiment(
     )
  
     loss_weights = training_cfg.get("loss_weights", None)
-    huber_delta  = training_cfg.get("huber_delta", 50.0)   # read from config, default 50
+    huber_delta  = training_cfg.get("huber_delta", 50.0)
+
+    patience = training_cfg.get("unfreeze_patience", 5)
+    lr_backbone = training_cfg.get("lr_backbone",  1e-5)
+    max_layers = training_cfg.get("layers_to_unfreeze", 0)
+
+    unfreezer = UnfreezeOnPlateau(
+        model = model,
+        optimizer = optimizer,
+        max_layers=max_layers,
+        patience=patience,
+        lr_backbone=lr_backbone,
+        lr_head= exp_cfg["lr"]
+    )
  
     with mlflow.start_run(run_name=config_name):
  
-        # log params
+        # ── log params ────────────────────────────────────────────
         mlflow.log_param("config_name",  config_name)
         mlflow.log_param("model_type",   exp_cfg["model"])
         mlflow.log_param("targets",      str(target_cols))
@@ -270,10 +375,27 @@ def run_experiment(
             if k not in ("model", "lr"):
                 mlflow.log_param(k, v)
  
-        best_val_loss = float("inf")
+        # ── resume from checkpoint if it exists ───────────────────
         Path("models").mkdir(exist_ok=True)
+        ckpt_path     = f"models/{config_name}_best.pt"
+        start_epoch   = 1
+        best_val_loss = float("inf")
  
-        for epoch in range(1, training_cfg["epochs"] + 1):
+        if Path(ckpt_path).exists():
+            print(f"  Resuming from checkpoint: {ckpt_path}")
+            ckpt = torch.load(ckpt_path, map_location=device)
+            model.load_state_dict(ckpt["model_state"])
+            optimizer.load_state_dict(ckpt["optimizer_state"])
+            start_epoch   = ckpt["epoch"] + 1
+            best_val_loss = ckpt["val_loss"]
+            print(f"  Starting at epoch {start_epoch} | best val loss so far: {best_val_loss:.3f}")
+        else:
+            print(f"  No checkpoint found — starting from scratch")
+ 
+        # ── epoch loop ────────────────────────────────────────────
+        for epoch in range(start_epoch, training_cfg["epochs"] + 1):
+
+            optimizer = unfreezer.current_optimizer
  
             train_loss, train_loss_per_target = train_one_epoch(
                 model, train_loader, optimizer, device, loss_weights, huber_delta
@@ -281,7 +403,12 @@ def run_experiment(
             val_loss, metrics = evaluate(
                 model, test_loader, device, loss_weights, huber_delta, target_cols
             )
- 
+
+            just_unfroze = unfreezer.step(val_loss, epoch)
+            if just_unfroze:
+                mlflow.log_metric("layers_unfrozen", unfreezer.layers_unfrozen,
+                                  step = epoch)
+
             # log per-epoch metrics
             mlflow.log_metric("train_loss", train_loss, step=epoch)
             mlflow.log_metric("val_loss",   val_loss,   step=epoch)
@@ -305,19 +432,27 @@ def run_experiment(
                 f"protein MAE={prot_mae:.1f}g ({prot_mape:.1f}%)"
             )
  
+            # save checkpoint if best val loss so far
             if val_loss < best_val_loss:
                 best_val_loss = val_loss
-                ckpt_path = f"models/{config_name}_best.pt"
                 torch.save({
-                    "epoch":        epoch,
-                    "model_state":  model.state_dict(),
-                    "val_loss":     val_loss,
-                    "metrics":      metrics,
-                    "target_cols":  target_cols,
-                    "config":       exp_cfg,
-                    "huber_delta":  huber_delta,
+                    "epoch":           epoch,
+                    "model_state":     model.state_dict(),
+                    "optimizer_state": optimizer.state_dict(),
+                    "val_loss":        val_loss,
+                    "metrics":         metrics,
+                    "target_cols":     target_cols,
+                    "config":          exp_cfg,
+                    "huber_delta":     huber_delta,
                 }, ckpt_path)
  
+                # mirror to Drive immediately so checkpoint persists if session ends
+                drive_models = Path("/content/drive/MyDrive/plate-intake/models/")
+                if drive_models.exists():
+                    import shutil
+                    shutil.copy(ckpt_path, drive_models / f"{config_name}_best.pt")
+ 
+        # ── log final artifacts ───────────────────────────────────
         mlflow.log_metric("best_val_loss", best_val_loss)
         mlflow.log_artifact(ckpt_path)
         mlflow.pytorch.log_model(model, artifact_path=config_name)
@@ -326,6 +461,7 @@ def run_experiment(
         print(f"  Checkpoint    : {ckpt_path}")
  
     return best_val_loss
+ 
  
 # ---------------------------------------------------------------
 # Summarize all runs

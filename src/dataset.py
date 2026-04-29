@@ -6,7 +6,7 @@ from torch.utils.data import Dataset
 import torch
 import yaml
 
-class Nutrition5KDataset(Dataset):
+class Nutrition5kDataset(Dataset):
     """Creates PyTorch Dataset in (C, H, W) from overhead RGB images
     Regression target: total_calories, total_protein per dish
     """
@@ -32,21 +32,38 @@ class Nutrition5KDataset(Dataset):
             dfs.append(df)
         metadata = pd.concat(dfs, ignore_index=True)
 
+        # metadata = metadata[metadata['dish_id'].isin(valid_ids)].reset_index(drop=True)
+
+        print(f"  [INFO] Scanning image directory...")
+        available_ids = set(
+          photo.name for photo in self.imagery_dir.iterdir()
+          if (photo / 'rgb.png').exists()
+        )
+        print(f"   [INFO] Found {len(available_ids)}")
+
         metadata = metadata[metadata['dish_id'].isin(valid_ids)]
-        metadata = metadata[
-            metadata['dish_id'].apply(self._has_rgb_png)
-            ].reset_index(drop=True)
-        
+        metadata = metadata[metadata['dish_id'].isin(available_ids)].reset_index(drop=True)
+
         self.metadata = metadata
     
     def _load_metadata(self, path: str) -> pd.DataFrame:
-        df = pd.read_csv(path, header=0)
+        df = pd.read_csv(path, header=None, engine='python', on_bad_lines='skip')
+        
+        # original csv missing column titles
+        df = df.rename(columns={0: "dish_id",
+                                1: "total_calories",
+                                2: "total_mass",
+                                3: "total_fat",
+                                4: "total_carb",
+                                5: "total_protein",
+                                6: "num_ingrs",})
+        
+        # _cfg_path = Path(__file__).parent.parent / 'configs' / 'dish_data_config.yaml'
+        # with open(_cfg_path, 'r') as f:
+        #     config = yaml.safe_load(f)
 
-        _cfg_path = Path(__file__).parent.parent / 'configs' / 'dish_data_config.yaml'
-        with open(_cfg_path, 'r') as f:
-            config = yaml.safe_load(f)
-
-        dish_cols = config['dish_cols']
+        dish_cols = ["dish_id", "total_calories", "total_mass",
+        "total_fat", "total_carb", "total_protein", "num_ingrs"]
 
         df.columns = df.columns.str.strip()
         df = df[dish_cols].copy()
