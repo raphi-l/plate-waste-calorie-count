@@ -117,7 +117,16 @@ class Nutrition5kDataset(Dataset):
         }
     
 
-
-
+def load_and_preprocess_image(
+        image_path: str,
+        target_size: tuple = (224, 224)
+) -> np.ndarray:
+    """Standalone version of _load_image for use in app.py and tests."""
+    path = Path(image_path)
+    if not path.exists():
+        raise FileNotFoundError(f"Image not found: {image_path}")
+    img = Image.open(path).convert("RGB")
+    img = img.resize(target_size, Image.Resampling.BILINEAR)
+    return np.array(img, dtype=np.float32) / 255.0
 
         
