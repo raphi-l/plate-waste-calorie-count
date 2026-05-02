@@ -1,16 +1,22 @@
-# Python 3.11.3
+# requirements.txt
 
-# Data handling
-numpy==2.2.6
-pandas==2.3.1
+# core ML
+torch==2.2.2
+torchvision==0.17.2
 
-# ML
-scikit-learn==1.5.1
-lightgbm==4.6.0
+# data
+numpy==1.26.4
+pandas==2.2.2
+Pillow==10.4.0
+scikit-learn==1.5.0
+
+# app
+streamlit==1.37.0
+openai==2.33.0
+
+# config + utils
+pyyaml==6.0.1
 mlflow==3.11.1
 
-# configure
-PyYAML==6.0.1
-
-# Testing
-pytest==7.4.4
+# testing
+pytest==8.3.2

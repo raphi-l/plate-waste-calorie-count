@@ -1,0 +1,24 @@
+# .dockerignore
+
+# data
+data/
+
+# mlflow
+mlruns/
+mlflow.db
+
+# secrets
+.streamlit/secrets.toml
+.env
+
+# dev
+.venv/
+.git/
+__pycache__/
+*.pyc
+notebooks/
+tests/
+
+# dvc
+*.dvc
+.dvc/

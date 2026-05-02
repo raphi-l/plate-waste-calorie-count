@@ -17,11 +17,22 @@ def load_model(ckpt_path: str):
     model.eval()
     return model, device
 
+import os
+
 @st.cache_resource
 def get_llm_client():
-  client = OpenAI(base_url="https://api.studio.nebius.ai/v1/",
-                  api_key=st.secrets["NEBIUS_PLATE_API_KEY"])
-  return client
+    api_key = (
+        st.secrets.get("NEBIUS_PLATE_API_KEY")
+        or os.environ.get("NEBIUS_PLATE_API_KEY")
+    )
+    if not api_key:
+        st.error("No API key found. Set NEBIUS_PLATE_API_KEY environment variable.")
+        st.stop()
+
+    return OpenAI(
+        base_url="https://api.studio.nebius.ai/v1/",
+        api_key=api_key,
+    )
 
 def preprocess_image(image: Image.Image) -> torch.Tensor:
     image = image.convert("RGB").resize((224, 224), Image.BILINEAR)
@@ -122,6 +133,8 @@ def main():
     client        = get_llm_client()
 
     # user inputs
+
+    
     user_message = st.text_area(
         "Clinical context",
         placeholder="e.g. My patient had 420 kcal and 35 g protein plated for lunch."
@@ -181,7 +194,7 @@ def main():
         # display results
         col1, col2 = st.columns(2)
         with col1:
-            st.image(image, caption="Uploaded plate", use_container_width=True)
+            st.image(image, caption="Uploaded plate")
         with col2:
             consumed_kcal = max(0, plated_amounts[0] - remaining_kcal)
             consumed_pro = max(0, plated_amounts[1] - remaining_protein)
