@@ -7,7 +7,7 @@ pandas==2.3.1
 # ML
 scikit-learn==1.5.1
 lightgbm==4.6.0
-mlflow==3.10.1
+mlflow==3.11.1
 
 # configure
 PyYAML==6.0.1

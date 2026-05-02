@@ -9,7 +9,9 @@ from build_model import build_model
 @st.cache_resource
 def load_model(ckpt_path: str):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    
     ckpt   = torch.load(ckpt_path, map_location=device)
+    
     model  = build_model(ckpt["config"])
     model.load_state_dict(ckpt["model_state"])
     model.eval()
@@ -52,7 +54,15 @@ def parse_plated(user_message: str,
 
   raw = response.choices[0].message.content.strip()
 
-  return [int(x) for x in raw.split(",")]
+  content_list = []
+  for x in raw.split(','):
+    x = x.strip()
+    if x == "null" or x =="" or int(float(x)) < 0:
+       content_list.append(0)
+    else:
+       content_list.append(int(float(x)))
+
+  return content_list
 
 def generate_response(plated_amounts: list[int],
                       predicted_waste_kcal: int,

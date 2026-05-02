@@ -70,8 +70,10 @@ def test_image_resizes_to_expected_shape(dataset_instance):
 
 def test_pixel_values_normalized_to_0_1(dataset_instance):
     """All pixel values should be float32 in [0, 1]."""
+
     dish_id = dataset_instance.metadata.iloc[0]["dish_id"]
     arr = dataset_instance._load_image(dish_id)
+    
     assert arr.dtype == np.float32
     assert arr.min() >= 0.0
     assert arr.max() <= 1.0

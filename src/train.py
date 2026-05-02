@@ -492,6 +492,78 @@ def summarize_experiments():
     print(f"\n  Best run : {best['tags.mlflow.runName']}")
     print(f"  Val loss : {best['metrics.best_val_loss']:.3f}")
  
+def save_best_model_report(
+        ckpt_path: str = None,
+        output_path: str = "models/best_model_report.yaml",
+):
+    """
+    Reads the best model checkpoint and saves a clean YAML report
+    with all hyperparameters and metrics in their native Python types.
+
+    Args:
+        ckpt_path:   path to .pt checkpoint — if None, finds best by val_loss
+        output_path: where to save the report YAML
+    """
+    import numpy as np
+
+    def to_python(obj):
+        """Recursively convert numpy/torch scalar types to native Python."""
+        if isinstance(obj, dict):
+            return {k: to_python(v) for k, v in obj.items()}
+        elif isinstance(obj, (np.integer,)):
+            return int(obj)
+        elif isinstance(obj, (np.floating,)):
+            return round(float(obj), 4)
+        elif isinstance(obj, np.ndarray):
+            return obj.tolist()
+        elif isinstance(obj, float):
+            return round(obj, 4)
+        else:
+            return obj
+
+    # find best checkpoint if not specified
+    if ckpt_path is None:
+        candidates = list(Path("models").glob("*_best.pt"))
+        if not candidates:
+            print("  [WARN] No checkpoint files found in models/")
+            return None
+
+        # pick lowest val_loss across all checkpoints
+        best_ckpt_path = min(
+            candidates,
+            key=lambda p: torch.load(p, map_location="cpu").get("val_loss", float("inf"))
+        )
+    else:
+        best_ckpt_path = Path(ckpt_path)
+
+    ckpt = torch.load(best_ckpt_path, map_location="cpu")
+
+    report = {
+        "best_run": {
+            "checkpoint":  str(best_ckpt_path),
+            "epoch":       int(ckpt["epoch"]),
+            "val_loss":    round(float(ckpt["val_loss"]), 4),
+            "target_cols": ckpt["target_cols"],
+            "huber_delta": round(float(ckpt["huber_delta"]), 4),
+        },
+        "hyperparameters": to_python(ckpt["config"]),
+        "metrics":         to_python(ckpt["metrics"]),
+    }
+
+    Path(output_path).parent.mkdir(exist_ok=True)
+    with open(output_path, "w") as f:
+        yaml.dump(report, f, default_flow_style=False, sort_keys=False)
+
+    print(f"\n  Best model report saved → {output_path}")
+    print(f"  Checkpoint  : {best_ckpt_path}")
+    print(f"  Epoch       : {report['best_run']['epoch']}")
+    print(f"  Val loss    : {report['best_run']['val_loss']}")
+    print(f"  MAE kcal    : {report['metrics']['mae_calories']} kcal")
+    print(f"  MAE protein : {report['metrics']['mae_protein']} g")
+    print(f"  R² kcal     : {report['metrics']['r2_calories']}")
+
+    return report
+
 # ---------------------------------------------------------------
 # Entrypoint
 # ---------------------------------------------------------------
