@@ -9,17 +9,28 @@ Data were obtained from Google's 2021 Nutrition5k dataset, specifically using th
 ## Setup
 
 ### Docker
-1. Pull/build the image
+**1. Clone the repo**
+```bash
+git clone https://github.com/raphi-l/plate-waste-calorie-count.git
+cd plate-waste-calorie-count
+
+**2. Download the model checkpoint**
+```bash
+pip install gdown
+gdown "1DM2Lf9cRXgOqjXOgXnTiVFOQUEteuHtZ" -0 models/efficientnet_b3_UF6_best.pt
+```
+**3. Build the image**
 ```bash
 docker build -t plate-waste-calorie-count .
 ```
 
-2. Run the app:
+**4. Run the app:**
 ```bash
 docker run -p 8501:8501 -e NEBIUS_PLATE_API_KEY="your-nebius-api-key" plate-waste-calorie-count
 ```
 
-3. Open app in your local browser: `https://localhost:8501`
+**5. Open app in your local browser:** \
+ `https://localhost:8501`
 
 ### Data Loading
 Training images and data were obtained from Google's [Nutrition5k dataset](https://github.com/google-research-datasets/Nutrition5k)
@@ -47,6 +58,8 @@ Then users will be able to upload a picture of a patient's completed (or partial
 The model will then .........
 
 ## App Architecture
+
+
 
 ## Results Summary
 

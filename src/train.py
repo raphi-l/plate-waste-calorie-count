@@ -494,11 +494,11 @@ def summarize_experiments():
  
 def save_best_model_report(
         ckpt_path: str = None,
-        output_path: str = "models/best_model_report.yaml",
+        output_path: str = "configs/best_model_report.yaml",
 ):
     """
-    Reads the best model checkpoint and saves a clean YAML report
-    with all hyperparameters and metrics in their native Python types.
+    Reads the best model checkpoint and saves a YAML report
+    with all hyperparameters and metrics
 
     Args:
         ckpt_path:   path to .pt checkpoint — if None, finds best by val_loss

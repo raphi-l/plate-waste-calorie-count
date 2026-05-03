@@ -131,7 +131,7 @@ def main():
     st.title("Plate Intake Estimator")
     st.caption("Clinical tool for estimating patient calorie intake from plate waste photos")
 
-    with open("models/best_model_report.yaml", 'r') as f:
+    with open("configs/best_model_report.yaml", 'r') as f:
         model_path = str(yaml.safe_load(f)['best_run']['checkpoint'])
     
     model, device = load_model(model_path)

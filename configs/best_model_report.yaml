@@ -1,0 +1,23 @@
+best_run:
+  checkpoint: models/efficientnet_b3_UF6_best.pt
+  epoch: 54
+  val_loss: 1204.2714
+  target_cols:
+  - total_calories
+  - total_protein
+  huber_delta: 50.0
+hyperparameters:
+  model: efficientnet
+  variant: 3
+  weights: EfficientNet_B3_Weights.DEFAULT
+  lr: 0.001
+  optimizer: adam
+  layers_to_unfreeze: 6
+  dropout: 0.6
+metrics:
+  mae_calories: 37.5735
+  mape_calories: 31.4842
+  r2_calories: 0.8916
+  mae_protein: 4.2298
+  mape_protein: 70.5815
+  r2_protein: 0.7278
