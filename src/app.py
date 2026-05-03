@@ -128,7 +128,7 @@ def generate_response(plated_amounts: list[int],
 # --------------------------------------------------------
 
 def main():
-    st.title("Plate Intake Estimator")
+    st.title("Calorie Count from Plate Waste")
     st.caption("Clinical tool for estimating patient calorie intake from plate waste photos")
 
     with open("configs/best_model_report.yaml", 'r') as f:
@@ -141,11 +141,11 @@ def main():
 
     
     user_message = st.text_area(
-        "Clinical context",
-        placeholder="e.g. My patient had 420 kcal and 35 g protein plated for lunch."
+        "Input total calories and protein plated for patient:",
+        placeholder="e.g. My patient had 420 kcal and 35 g protein plated for lunch, or \n 420 kcal, 35 g protein."
     )
     image_file = st.file_uploader(
-        "Photo of remaining plate",
+        "Photo of remaining plate (recommended to take from over-head)",
         type=["jpg", "jpeg", "png"]
     )
 
@@ -162,10 +162,18 @@ def main():
         # parse plated kcal from message
         plated_amounts = parse_plated(user_message, client)
 
-        if plated_amounts[0] is None:
+        if plated_amounts[0] == 0:
             st.warning(
-                "Could not find a plated calorie amount in your message. "
+                "Could not find a valid plated calorie amount in your message. "
                 "Please include it, e.g. '420 kcal was plated'."
+            )
+            st.stop()
+
+        # check feasiblity of kcal amount in relation to protein
+        if (plated_amounts[1] * 4) > plated_amounts[0]:
+            st.warning(
+               "**[ERROR]** Protein amount entered exceeds input calorie amount (1 g protein = 4 kcal)."
+               f" If patient recived {plated_amounts[1]} g protein, expect at least {plated_amounts[1]*4} kcal on plate!"
             )
             st.stop()
 

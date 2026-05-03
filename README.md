@@ -43,7 +43,9 @@ Training images and data were obtained from Google's [Nutrition5k dataset](https
 
 To replicate real-world applications, we only trained our model on rgb.png overhead plated-food images. From the metadata csv's we extracted only `dish_id`, `total_calories` and `total_protein`.
 
-Data were pulled from Google's repository using:
+Training and Test/Validation splits were performed using the `rgb_train_ids.txt` and `rgb_test_ids.txt` files from Google's repository. 
+
+Data were pulled from the repository using:
 ```bash
 mkdir -p data/raw/imagery data/raw/metadata data/raw/dish_ids
 
@@ -121,7 +123,21 @@ Clinician Input
                                 Clinical Summary
 ```
 
+## Methods
+For our experiments, we iterated through linear-regression (sanity model) and EfficientNet-B0, B1, and B3, using the `pytorch` and `torchvision` libraries. Static hyperparameters were a learning rate 0.001 of for the model head, a learning rate of 1e-5 for backbone layers, and adam optimizer `EfficientNet_B<variant>_Weights.DEFAULT` pretrained weights were used for our baseline models.  
+
+We used huberloss with a threshold of 50. For simplicity, we maintained this singular value for both calories and protein. To address the scale descepancy between calories and protein, we used penalty weights of [1.0 , 4.5] for calories and protein respectively prior to back-propagation. 
+
+For our configurable hyperperameters, we explored unfreeezing either 0,4, or 6 backbone layers; dropout layers of 0.4 or 0.6. 
+
+Using `mlflow` for experiment tracking, we ran a total of 7 differnt model configurations (refer to `configs/model_config.yaml`). Experiments were run using a `NVIDIA A100-SXM4-80GB` on Google Colab (refer to notebook: `notebooks/plate_waste_calorie_count_colab_run.ipynb`)
+
+For metric reporting, we relied on Mean Absolute Error, R2, and MAPE. 
+
 ## Results Summary
+It was found that EfficientNet-B3 with 6 non-batch normalization layers unfrozen offered the best results. 
+
+In validation testing on novel images, our model acheived a Mean Absolute Error of 37.57 kcal and 4.23 g of protein. For our application, this approaching clinical insignificance. 
 
 ### Run Summary
 
@@ -149,6 +165,7 @@ Clinician Input
 | Metric | Calories | Protein |
 |---|---|---|
 | MAE | 37.57 kcal | 4.23 g |
+| MAPE | 31.48% | 70.58% |
 | R² | 0.892 | 0.728 |
 
 ## Limitations
@@ -162,3 +179,8 @@ This may be addressed by live-retraining of our model where manually verified po
 For demonstration, we use a light-weight LLM `meta-llama/Meta-Llama-3.1-8B-Instruct` to parse caloried and protein plated for each patient. However, in real-world applications we would integrate our app with existing hospital food service managment systems (i.e. CBOARD) to directly pull patients' plated food data.
 
 Our current Docker build has a content size of 3.32GB, largely attributed to the size of the torch library. In future builds, we will transition to ONNX for a prediction only library.
+
+## 👤 Author
+
+**Raphael** — Registered Dietitian & ML practitioner  
+[HuggingFace](https://huggingface.co/raphi-l) · [GitHub](https://github.com/raphi-l)
