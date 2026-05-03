@@ -72,7 +72,7 @@ class EfficientNetRegressor(nn.Module):
                 if not is_batch_norm:
                     for param in layer.parameters():
                         param.requires_grad = True
-            print(f"[INFO] Unfreezing top {layers_to_unfreeze} of model.")
+            # print(f"[INFO] Unfreezing top {layers_to_unfreeze} of model.")
 
     def forward(self, x:torch.Tensor) -> torch.Tensor:
         x = self.features(x)

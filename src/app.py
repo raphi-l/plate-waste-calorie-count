@@ -3,6 +3,7 @@ import streamlit as st
 import torch
 import numpy as np
 from PIL import Image
+import yaml
 
 from build_model import build_model
  
@@ -21,13 +22,14 @@ import os
 
 @st.cache_resource
 def get_llm_client():
-    api_key = (
-        st.secrets.get("NEBIUS_PLATE_API_KEY")
-        or os.environ.get("NEBIUS_PLATE_API_KEY")
-    )
+    api_key = os.environ.get("NEBIUS_PLATE_API_KEY")
+
     if not api_key:
-        st.error("No API key found. Set NEBIUS_PLATE_API_KEY environment variable.")
-        st.stop()
+        try:
+            api_key = st.secrets["NEBIUS_PLATE_API_KEY"]
+        except (FileNotFoundError, KeyError):
+            st.error("No API key found. Set NEBIUS_PLATE_API_KEY environment variable.")
+            st.stop()
 
     return OpenAI(
         base_url="https://api.studio.nebius.ai/v1/",
@@ -129,7 +131,10 @@ def main():
     st.title("Plate Intake Estimator")
     st.caption("Clinical tool for estimating patient calorie intake from plate waste photos")
 
-    model, device = load_model("models/efficientnet_b3_UF6_best.pt")
+    with open("models/best_model_report.yaml", 'r') as f:
+        model_path = str(yaml.safe_load(f)['best_run']['checkpoint'])
+    
+    model, device = load_model(model_path)
     client        = get_llm_client()
 
     # user inputs

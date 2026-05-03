@@ -22,3 +22,7 @@ tests/
 # dvc
 *.dvc
 .dvc/
+
+# old models
+models/
+!models/efficientnet_b3_UF6_best.pt
