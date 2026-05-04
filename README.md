@@ -8,8 +8,9 @@ In our project, we trained a computer vision model to estimate the calorie and p
 
 In the end were able to create a light-weight model (133.5 MB) based on the EfficientNet-B3 CNN. Our MAE during validation testing was  37.57 kcal and 4.23 g protein. In the context of calorie counts, this may be seen as clinically insignificant. However, further stress testing will need be done in real-world environments. 
 
-## Setup
+**[-----APP DEMO VIDEO-----](https://www.loom.com/share/11076834e1014d478b8912a7f576dc7e)**
 
+## Setup
 ### Docker
 
 **1. Clone the repo**
