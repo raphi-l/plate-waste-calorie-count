@@ -87,7 +87,7 @@ def generate_response(plated_amounts: list[int],
   if plated_amounts[0] == 0:
     percent_kcal = None
   else:
-    percent_kcal = (consumed_kcal / plated_amounts[0]) * 100
+    percent_kcal = round(((consumed_kcal / plated_amounts[0]) * 100),2)
 
   if plated_amounts[1] == 0:
     percent_pro = None
@@ -201,7 +201,7 @@ def main():
             response = generate_response(
                plated_amounts = plated_amounts,
                predicted_waste_kcal = remaining_kcal,
-               predicted_waste_protein = remaining_protein,
+               predicted_waste_protein = round(remaining_protein, 2),
                client = client)
 
         # display results
